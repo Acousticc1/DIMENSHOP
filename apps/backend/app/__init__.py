@@ -1,0 +1,1 @@
+"""DIMENSHOP Backend - FastAPI Application"""
