@@ -1,13 +1,15 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei/native';
 import { THEME } from '../../styles/theme';
+import { useFPSMonitor } from '../../../application/hooks/useDeviceCapabilities';
 import { logger } from '../../../shared/utils/logger';
 
 interface ThreeDViewerProps {
   modelUrl: string;
   fallbackImage?: string;
+  onLowPerformance?: () => void;
 }
 
 function Model({ url }: { url: string }) {
@@ -20,7 +22,20 @@ function Model({ url }: { url: string }) {
   }
 }
 
-export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
+function PerformanceBoundary({ onLowPerformance }: { onLowPerformance?: () => void }) {
+  const { isLowPerformance } = useFPSMonitor(20); // 20 FPS threshold
+  
+  useEffect(() => {
+    if (isLowPerformance && onLowPerformance) {
+      logger.warn('Triggering low performance fallback boundary');
+      onLowPerformance();
+    }
+  }, [isLowPerformance, onLowPerformance]);
+
+  return null;
+}
+
+export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl, onLowPerformance }) => {
   return (
     <View style={styles.container}>
       <Suspense 
@@ -35,6 +50,8 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
           <ambientLight intensity={0.7} />
           <spotLight position={[10, 15, 10]} angle={0.3} penumbra={1} intensity={1.5} castShadow />
           <directionalLight position={[-5, 5, -5]} intensity={0.5} />
+          
+          <PerformanceBoundary onLowPerformance={onLowPerformance} />
           
           <Model url={modelUrl} />
           

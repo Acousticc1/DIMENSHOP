@@ -5,6 +5,7 @@ import { ChevronLeft, Heart, Rotate3d, ShoppingBag, Eye } from 'lucide-react-nat
 import { THEME } from '../../styles/theme';
 import { ImageGallery } from '../../presentation/components/product/ImageGallery';
 import { ThreeDViewer } from '../../presentation/components/viewer/ThreeDViewer';
+import { ViewerFallback } from '../../presentation/components/viewer/ViewerFallback';
 import { MOCK_PRODUCTS } from '../../shared/constants/mockData';
 import { useCartStore } from '../../application/stores/useCartStore';
 import { useWishlistStore } from '../../application/stores/useWishlistStore';
@@ -20,6 +21,7 @@ export default function ProductDetail() {
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   
   const [view3d, setView3d] = useState(false);
+  const [lowPerfFallback, setLowPerfFallback] = useState(false);
 
   const product = MOCK_PRODUCTS.find(p => p.id === id);
   const isFavorite = product ? isInWishlist(product.id) : false;
@@ -75,9 +77,15 @@ export default function ProductDetail() {
       </View>
 
         {/* Toggle between 3D Viewer and Image Gallery */}
-        {view3d && product.modelUrl ? (
+        {view3d && product.modelUrl && !lowPerfFallback ? (
           <View style={styles.viewerContainer}>
-            <ThreeDViewer modelUrl={product.modelUrl} />
+            <ThreeDViewer 
+              modelUrl={product.modelUrl} 
+              onLowPerformance={() => {
+                setLowPerfFallback(true);
+                setView3d(false);
+              }}
+            />
             <TouchableOpacity 
               style={styles.galleryToggleBtn}
               onPress={() => setView3d(false)}
@@ -87,10 +95,17 @@ export default function ProductDetail() {
           </View>
         ) : (
           <>
-            <ImageGallery images={product.images} />
+            {lowPerfFallback ? (
+              <ViewerFallback 
+                images={product.images} 
+                reason="Low frame rate or rendering issues detected. Standard image gallery activated." 
+              />
+            ) : (
+              <ImageGallery images={product.images} />
+            )}
 
             {/* 3D Model Launcher Area */}
-            {product.has3dModel && (
+            {product.has3dModel && !lowPerfFallback && (
               <TouchableOpacity 
                 style={styles.viewerLauncher}
                 activeOpacity={0.8}
