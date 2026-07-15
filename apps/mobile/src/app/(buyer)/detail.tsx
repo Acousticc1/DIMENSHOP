@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Heart, Rotate3d, ShoppingBag } from 'lucide-react-native';
+import { ChevronLeft, Heart, Rotate3d, ShoppingBag, Eye } from 'lucide-react-native';
 import { THEME } from '../../styles/theme';
 import { ImageGallery } from '../../presentation/components/product/ImageGallery';
+import { ThreeDViewer } from '../../presentation/components/viewer/ThreeDViewer';
 import { MOCK_PRODUCTS } from '../../shared/constants/mockData';
 import { useCartStore } from '../../application/stores/useCartStore';
 import { useWishlistStore } from '../../application/stores/useWishlistStore';
@@ -17,6 +18,8 @@ export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addItem, isLoading: isAdding } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  
+  const [view3d, setView3d] = useState(false);
 
   const product = MOCK_PRODUCTS.find(p => p.id === id);
   const isFavorite = product ? isInWishlist(product.id) : false;
@@ -71,25 +74,38 @@ export default function ProductDetail() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Image Gallery */}
-        <ImageGallery images={product.images} />
+        {/* Toggle between 3D Viewer and Image Gallery */}
+        {view3d && product.modelUrl ? (
+          <View style={styles.viewerContainer}>
+            <ThreeDViewer modelUrl={product.modelUrl} />
+            <TouchableOpacity 
+              style={styles.galleryToggleBtn}
+              onPress={() => setView3d(false)}
+            >
+              <Text style={styles.galleryToggleBtnText}>Switch to Photo Gallery</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <ImageGallery images={product.images} />
 
-        {/* 3D Model Launcher Area */}
-        {product.has3dModel && (
-          <TouchableOpacity 
-            style={styles.viewerLauncher}
-            activeOpacity={0.8}
-            onPress={() => logger.info('Launcher clicked - 3D viewer will open in Phase 14')}
-          >
-            <View style={styles.launcherIconWrapper}>
-              <Rotate3d color="#FFFFFF" size={28} />
-            </View>
-            <View style={styles.launcherInfo}>
-              <Text style={styles.launcherTitle}>View in 3D Space</Text>
-              <Text style={styles.launcherSubtitle}>Drag to rotate and pinch to zoom details</Text>
-            </View>
-          </TouchableOpacity>
+            {/* 3D Model Launcher Area */}
+            {product.has3dModel && (
+              <TouchableOpacity 
+                style={styles.viewerLauncher}
+                activeOpacity={0.8}
+                onPress={() => setView3d(true)}
+              >
+                <View style={styles.launcherIconWrapper}>
+                  <Rotate3d color="#FFFFFF" size={28} />
+                </View>
+                <View style={styles.launcherInfo}>
+                  <Text style={styles.launcherTitle}>View in 3D Space</Text>
+                  <Text style={styles.launcherSubtitle}>Drag to rotate and pinch to zoom details</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {/* Product Details Info Card */}
@@ -281,5 +297,24 @@ const styles = StyleSheet.create({
   },
   addToCartBtn: {
     width: '100%',
+  },
+  viewerContainer: {
+    paddingHorizontal: 24,
+    marginTop: 16,
+    width: '100%',
+  },
+  galleryToggleBtn: {
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: THEME.borderRadius.md,
+    marginTop: 10,
+  },
+  galleryToggleBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });
