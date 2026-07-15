@@ -52,8 +52,11 @@ export default function ProductForm() {
       const product = await createProduct(data);
       logger.info('Product created draft successfully', { id: product.id });
       
-      // Redirect to products panel
-      router.replace('/(seller)/products');
+      // Redirect to image upload page
+      router.replace({
+        pathname: '/(seller)/image-upload',
+        params: { productId: product.id },
+      });
     } catch (err) {
       logger.error('Failed to create product draft', err);
     }
